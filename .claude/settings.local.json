@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx bmad *)",
+      "Bash(npm --version)",
+      "Bash(bmad install *)"
+    ]
+  }
+}
