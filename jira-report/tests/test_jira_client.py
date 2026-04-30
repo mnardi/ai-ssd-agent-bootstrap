@@ -12,6 +12,8 @@ from jira_report.jira_client import (
     _build_jql_done,
     _build_jql_in_progress,
     _build_jql_planned,
+    JiraTicket,
+    JiraData,
 )
 
 
@@ -74,14 +76,14 @@ def test_auth_token_not_in_error_message(sample_config):
         assert sample_config.api_token not in str(exc_info.value)
 
 
-# ── Success path (auth + project valid; data retrieval is Story 2) ─────────────
+# ── Success path ───────────────────────────────────────────────────────────────
 
 def test_jira_initialized_with_correct_url(sample_config):
     with patch("jira_report.jira_client.JIRA") as mock_jira:
         mock_instance = MagicMock()
         mock_jira.return_value = mock_instance
-        with pytest.raises(NotImplementedError):
-            fetch_jira_data(sample_config)
+        mock_instance.search_issues.return_value = []  # Story 2.2: returns JiraData now
+        result = fetch_jira_data(sample_config)
         mock_jira.assert_called_once()
         assert mock_jira.call_args.kwargs.get("server") == sample_config.jira_url
 
@@ -90,8 +92,8 @@ def test_auth_succeeds_no_token_in_output(sample_config, capsys):
     with patch("jira_report.jira_client.JIRA") as mock_jira:
         mock_instance = MagicMock()
         mock_jira.return_value = mock_instance
-        with pytest.raises(NotImplementedError):
-            fetch_jira_data(sample_config)
+        mock_instance.search_issues.return_value = []  # Story 2.2: returns JiraData now
+        fetch_jira_data(sample_config)
         captured = capsys.readouterr()
         assert sample_config.api_token not in captured.out
         assert sample_config.api_token not in captured.err
@@ -185,3 +187,86 @@ def test_default_project_key_not_in_override_jql():
     assert "TEST" not in _build_jql_done("ALPHA", week_start, week_end)
     assert "TEST" not in _build_jql_in_progress("ALPHA")
     assert "TEST" not in _build_jql_planned("ALPHA")
+
+
+# ── Ticket retrieval & JiraData assembly ───────────────────────────────────────
+
+def test_fetch_returns_jira_data(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_jira.search_issues.return_value = []
+        result = fetch_jira_data(sample_config)
+        assert isinstance(result, JiraData)
+        assert result.done == []
+        assert result.in_progress == []
+        assert result.planned == []
+
+
+def test_jira_ticket_fields_populated_correctly(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_issue = MagicMock()
+        mock_issue.key = "TEST-42"
+        mock_issue.fields.summary = "Fix login timeout"
+        mock_issue.fields.assignee.displayName = "Alice"
+        mock_issue.fields.status.name = "Done"
+        mock_jira.search_issues.return_value = [mock_issue]
+        result = fetch_jira_data(sample_config)
+        ticket = result.done[0]
+        assert ticket.key == "TEST-42"
+        assert ticket.summary == "Fix login timeout"
+        assert ticket.assignee == "Alice"
+        assert ticket.status == "Done"
+
+
+def test_assignee_none_becomes_unassigned(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_issue = MagicMock()
+        mock_issue.key = "TEST-1"
+        mock_issue.fields.summary = "Unassigned task"
+        mock_issue.fields.assignee = None
+        mock_issue.fields.status.name = "To Do"
+        mock_jira.search_issues.return_value = [mock_issue]
+        result = fetch_jira_data(sample_config)
+        assert result.done[0].assignee == "Unassigned"
+
+
+def test_all_three_queries_called(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_jira.search_issues.return_value = []
+        fetch_jira_data(sample_config)
+        assert mock_jira.search_issues.call_count == 3
+
+
+def test_search_jira_error_raises_jira_fetch_error(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_jira.search_issues.side_effect = JIRAError(text="Server Error", status_code=500)
+        with pytest.raises(JiraFetchError):
+            fetch_jira_data(sample_config)
+
+
+def test_search_timeout_raises_jira_fetch_error(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_jira.search_issues.side_effect = requests.exceptions.Timeout("timed out")
+        with pytest.raises(JiraFetchError, match="timed out"):
+            fetch_jira_data(sample_config)
+
+
+def test_jira_data_dates_match_week_range(sample_config):
+    with patch("jira_report.jira_client.JIRA") as mock_jira_cls:
+        mock_jira = MagicMock()
+        mock_jira_cls.return_value = mock_jira
+        mock_jira.search_issues.return_value = []
+        result = fetch_jira_data(sample_config, week_override="2026-04-21")
+        assert result.week_start == date(2026, 4, 21)
+        assert result.week_end == date(2026, 4, 27)
