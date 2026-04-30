@@ -1,0 +1,8 @@
+jira_url: https://yourcompany.atlassian.net
+api_token: your-api-token-here
+project_key: PROJ
+output_dir: ./reports
+ai_provider: anthropic
+ai_model: claude-sonnet-4-6
+report_tone: professional
+project_name: Project Alpha

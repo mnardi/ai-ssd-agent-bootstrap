@@ -1,0 +1,34 @@
+[project]
+name = "jira-report"
+version = "0.1.0"
+description = "CLI tool to auto-generate weekly executive status reports from Jira data"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.97.0",
+    "jinja2>=3.1.6",
+    "jira>=3.10.5",
+    "pydantic>=2.0",
+    "pyyaml>=6.0.3",
+    "typer>=0.14.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.3.0",
+]
+
+[project.scripts]
+jira-report = "jira_report.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jira_report"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

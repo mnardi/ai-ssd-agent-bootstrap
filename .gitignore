@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# uv / virtualenv
+.venv/
+uv.lock.bak
+
+# test / build artifacts
+.pytest_cache/
+dist/
+build/
+*.dist-info/
+
+# local config (may contain credentials)
+config.yaml
+
+# Claude Code local settings
+.claude/settings.local.json
