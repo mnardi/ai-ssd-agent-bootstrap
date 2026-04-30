@@ -1,10 +1,18 @@
 import pytest
 import requests
+from datetime import date
 from unittest.mock import MagicMock, patch
 from jira import JIRAError
 
 from jira_report.config import JiraFetchError
-from jira_report.jira_client import fetch_jira_data, DEFAULT_TIMEOUT_SECONDS
+from jira_report.jira_client import (
+    fetch_jira_data,
+    DEFAULT_TIMEOUT_SECONDS,
+    _calculate_week_range,
+    _build_jql_done,
+    _build_jql_in_progress,
+    _build_jql_planned,
+)
 
 
 # ── Constant ──────────────────────────────────────────────────────────────────

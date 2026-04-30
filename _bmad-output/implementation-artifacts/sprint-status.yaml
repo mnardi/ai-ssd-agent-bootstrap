@@ -51,8 +51,8 @@ development_status:
   epic-1-retrospective: optional
 
   # ── Epic 2: Jira Data Retrieval ─────────────────────────────────────────
-  epic-2: backlog
-  2-1-automatic-date-range-calculation-and-jql-construction: backlog
+  epic-2: in-progress
+  2-1-automatic-date-range-calculation-and-jql-construction: in-progress
   2-2-parallel-ticket-retrieval-and-jiradata-assembly: backlog
   2-3-low-ticket-count-data-quality-warning: backlog
   epic-2-retrospective: optional
