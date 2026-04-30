@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-project-scaffold-and-module-structure: review
   1-2-config-file-loading-and-validation: review
-  1-3-cli-entry-point-runtime-flags-and-gitignore: backlog
+  1-3-cli-entry-point-runtime-flags-and-gitignore: review
   1-4-jira-authentication-validation: backlog
   epic-1-retrospective: optional
 
