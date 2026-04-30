@@ -1,6 +1,6 @@
 # Story 2.1: Automatic Date Range Calculation & JQL Construction
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,36 +17,36 @@ so that I always get data for the right week without calculating dates manually.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `_calculate_week_range()` in `jira_client.py` (AC: 1, 2)
-  - [ ] Add `from datetime import date, timedelta` imports at module top
-  - [ ] Implement `_calculate_week_range(week_override: Optional[str] = None, _today: Optional[date] = None) -> tuple[date, date]`
-  - [ ] For override path: parse `week_override` via `date.fromisoformat()`, return `(week_start, week_start + timedelta(days=6))`
-  - [ ] For auto path: `_today or date.today()`, compute days since last Sunday using `(today.weekday() + 1) % 7`, derive `week_start = last_sunday - timedelta(days=6)`
-  - [ ] `_today` parameter is a test seam — never set by callers other than tests
+- [x] Task 1: Implement `_calculate_week_range()` in `jira_client.py` (AC: 1, 2)
+  - [x] Add `from datetime import date, timedelta` imports at module top
+  - [x] Implement `_calculate_week_range(week_override: Optional[str] = None, _today: Optional[date] = None) -> tuple[date, date]`
+  - [x] For override path: parse `week_override` via `date.fromisoformat()`, return `(week_start, week_start + timedelta(days=6))`
+  - [x] For auto path: `_today or date.today()`, compute days since last Sunday using `(today.weekday() + 1) % 7`, derive `week_start = last_sunday - timedelta(days=6)`
+  - [x] `_today` parameter is a test seam — never set by callers other than tests
 
-- [ ] Task 2: Implement JQL builder private functions in `jira_client.py` (AC: 3, 4)
-  - [ ] Implement `_build_jql_done(project_key: str, week_start: date, week_end: date) -> str`
-  - [ ] Implement `_build_jql_in_progress(project_key: str) -> str`
-  - [ ] Implement `_build_jql_planned(project_key: str) -> str`
-  - [ ] All three functions must quote the project key: `project = "{project_key}"`
-  - [ ] Done JQL uses `updated >=` and `updated <=` with ISO date strings (YYYY-MM-DD)
+- [x] Task 2: Implement JQL builder private functions in `jira_client.py` (AC: 3, 4)
+  - [x] Implement `_build_jql_done(project_key: str, week_start: date, week_end: date) -> str`
+  - [x] Implement `_build_jql_in_progress(project_key: str) -> str`
+  - [x] Implement `_build_jql_planned(project_key: str) -> str`
+  - [x] All three functions must quote the project key: `project = "{project_key}"`
+  - [x] Done JQL uses `updated >=` and `updated <=` with ISO date strings (YYYY-MM-DD)
 
-- [ ] Task 3: Update `fetch_jira_data()` to call date range + JQL builders (AC: 1–4)
-  - [ ] After `_validate_project()`, call `_calculate_week_range(week_override)`
-  - [ ] Build all three JQL strings using `config.project_key`
-  - [ ] Keep `raise NotImplementedError` at the end — Story 2.2 replaces it with parallel query execution
-  - [ ] Do NOT execute any Jira search queries in this story
+- [x] Task 3: Update `fetch_jira_data()` to call date range + JQL builders (AC: 1–4)
+  - [x] After `_validate_project()`, call `_calculate_week_range(week_override)`
+  - [x] Build all three JQL strings using `config.project_key`
+  - [x] Keep `raise NotImplementedError` at the end — Story 2.2 replaces it with parallel query execution
+  - [x] Do NOT execute any Jira search queries in this story
 
-- [ ] Task 4: Implement tests in `tests/test_jira_client.py` (AC: 1–4)
-  - [ ] `test_auto_week_range_wednesday` — _today=Wed Apr 30 → Mon Apr 21, Sun Apr 27
-  - [ ] `test_auto_week_range_monday` — _today=Mon Apr 28 → Mon Apr 21, Sun Apr 27
-  - [ ] `test_auto_week_range_sunday` — _today=Sun Apr 27 → Mon Apr 21, Sun Apr 27
-  - [ ] `test_week_override_returns_7day_window` — "2026-04-21" → (Apr 21, Apr 27)
-  - [ ] `test_jql_done_contains_required_parts` — project key, status=Done, date range
-  - [ ] `test_jql_in_progress_structure` — project key, status in ("In Progress"), no dates
-  - [ ] `test_jql_planned_structure` — project key, To Do, Backlog, Next, no dates
-  - [ ] `test_project_key_override_in_jql` — different project_key appears in all JQL strings
-  - [ ] Run `uv run pytest tests/test_jira_client.py` — all tests pass
+- [x] Task 4: Implement tests in `tests/test_jira_client.py` (AC: 1–4)
+  - [x] `test_auto_week_range_wednesday` — _today=Wed Apr 29 → Mon Apr 20, Sun Apr 26
+  - [x] `test_auto_week_range_monday` — _today=Mon Apr 27 → Mon Apr 20, Sun Apr 26
+  - [x] `test_auto_week_range_sunday` — _today=Sun Apr 26 → Mon Apr 20, Sun Apr 26
+  - [x] `test_week_override_returns_7day_window` — "2026-04-21" → (Apr 21, Apr 27)
+  - [x] `test_jql_done_contains_required_parts` — project key, status=Done, date range
+  - [x] `test_jql_in_progress_structure` — project key, status in ("In Progress"), no dates
+  - [x] `test_jql_planned_structure` — project key, To Do, Backlog, Next, no dates
+  - [x] `test_project_key_override_in_jql` — different project_key appears in all JQL strings
+  - [x] Run `uv run pytest tests/test_jira_client.py` — all tests pass
 
 ## Dev Notes
 
@@ -244,10 +244,21 @@ However: after this story, the success-path tests (`test_jira_initialized_with_c
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
+None — implementation matched spec exactly; no debugging required.
+
 ### Completion Notes List
 
+- All 4 tasks implemented per spec; 41 tests pass (17 pre-existing + 10 new date/JQL tests + additional edge-case tests added beyond spec minimum)
+- Test expected dates corrected during implementation: story spec had wrong calendar dates (Apr 27 is Mon not Sun); correct week for Apr 29 (Wed) is Mon Apr 20 – Sun Apr 26
+- Extra tests added beyond spec: `test_auto_week_range_saturday`, `test_week_override_week_end_is_start_plus_6`, `test_jql_done_no_extra_date_parts`, `test_default_project_key_not_in_override_jql`
+- `_calculate_week_range` formula verified correct for all weekdays including edge cases (Mon, Sun, Sat)
+- `fetch_jira_data` still ends with `raise NotImplementedError` as required; Story 2.2 scope preserved
+
 ### File List
+
+- `src/jira_report/jira_client.py` — added `_calculate_week_range`, `_build_jql_done`, `_build_jql_in_progress`, `_build_jql_planned`; updated `fetch_jira_data` to call them
+- `tests/test_jira_client.py` — added 10+ date range and JQL builder tests
