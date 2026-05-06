@@ -1,10 +1,12 @@
 import pytest
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from jira_report.cli import app, _ensure_gitignore
 from jira_report.config import ConfigError
+from jira_report.jira_client import JiraData, JiraTicket, LOW_TICKET_WARNING_THRESHOLD
 
 runner = CliRunner()
 
@@ -99,7 +101,7 @@ def test_output_flag_overrides_config(tmp_path, monkeypatch, sample_config):
     assert captured.get("output_dir") == "./custom/"
 
 
-def test_dry_run_flag(tmp_path, monkeypatch, sample_config):
+def test_dry_run_flag(tmp_path, monkeypatch, sample_config, sample_jira_data):
     monkeypatch.chdir(tmp_path)
     captured = {}
 
@@ -109,7 +111,7 @@ def test_dry_run_flag(tmp_path, monkeypatch, sample_config):
 
     with patch("jira_report.cli._ensure_gitignore"), \
          patch("jira_report.cli.load_config", return_value=sample_config), \
-         patch("jira_report.cli.fetch_jira_data", return_value=MagicMock()), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
          patch("jira_report.cli.generate_report", return_value=MagicMock()), \
          patch("jira_report.cli.render_and_write", side_effect=fake_render):
         result = runner.invoke(app, ["--dry-run"])
@@ -134,13 +136,13 @@ def test_week_flag_passed_to_fetch(tmp_path, monkeypatch, sample_config):
     assert captured.get("week_override") == "2026-04-21"
 
 
-def test_success_prints_saved_path(tmp_path, monkeypatch, sample_config):
+def test_success_prints_saved_path(tmp_path, monkeypatch, sample_config, sample_jira_data):
     monkeypatch.chdir(tmp_path)
     saved_path = Path("./reports/report-2026-04-27.html")
 
     with patch("jira_report.cli._ensure_gitignore"), \
          patch("jira_report.cli.load_config", return_value=sample_config), \
-         patch("jira_report.cli.fetch_jira_data", return_value=MagicMock()), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
          patch("jira_report.cli.generate_report", return_value=MagicMock()), \
          patch("jira_report.cli.render_and_write", return_value=saved_path):
         result = runner.invoke(app, [])
@@ -148,3 +150,110 @@ def test_success_prints_saved_path(tmp_path, monkeypatch, sample_config):
     assert result.exit_code == 0
     assert "Done. Report saved:" in result.output
     assert str(saved_path) in result.output
+
+
+# ── Low-ticket-count warnings ──────────────────────────────────────────────────
+
+def _make_jira_data(done_count=3, in_progress_count=3, planned_count=3):
+    ticket = JiraTicket(key="T-1", summary="s", assignee="a", status="s")
+    return JiraData(
+        done=[ticket] * done_count,
+        in_progress=[ticket] * in_progress_count,
+        planned=[ticket] * planned_count,
+        week_start=date(2026, 4, 21),
+        week_end=date(2026, 4, 27),
+    )
+
+
+def test_low_ticket_threshold_constant():
+    assert LOW_TICKET_WARNING_THRESHOLD == 3
+
+
+def test_warning_emitted_for_low_done_count(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(done_count=2)), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Warning" in result.output
+    assert "Done" in result.output
+
+
+def test_warning_emitted_for_low_in_progress_count(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(in_progress_count=1)), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Warning" in result.output
+    assert "In Progress" in result.output
+
+
+def test_warning_emitted_for_low_planned_count(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(planned_count=0)), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Warning" in result.output
+    assert "Planned" in result.output
+
+
+def test_no_warning_when_all_sections_meet_threshold(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data()), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Warning" not in result.output
+
+
+def test_multiple_sections_can_warn(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(done_count=2, in_progress_count=1)), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Done" in result.output
+    assert "In Progress" in result.output
+
+
+def test_warning_goes_to_stderr_not_stdout(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(done_count=1)), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Warning" in result.stderr
+    assert "Warning" not in result.stdout
+
+
+def test_pipeline_continues_after_warning(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    generate_called = {}
+
+    def fake_generate(config, jira_data):
+        generate_called["called"] = True
+        return MagicMock()
+
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(done_count=0)), \
+         patch("jira_report.cli.generate_report", side_effect=fake_generate), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+
+    assert generate_called.get("called") is True
+    assert result.exit_code == 0

@@ -6,7 +6,7 @@ from typing import Optional
 import typer
 
 from jira_report.config import JiraReportError, load_config
-from jira_report.jira_client import fetch_jira_data
+from jira_report.jira_client import fetch_jira_data, JiraData, LOW_TICKET_WARNING_THRESHOLD
 from jira_report.ai_engine import generate_report
 from jira_report.renderer import render_and_write
 
@@ -34,6 +34,7 @@ def main(
         typer.echo("Authenticating...")
         typer.echo("Fetching Jira data...")
         jira_data = fetch_jira_data(config, week_override=week)
+        _warn_low_ticket_counts(jira_data)
 
         typer.echo("Generating report...")
         sections = generate_report(config, jira_data)
@@ -71,3 +72,17 @@ def _ensure_gitignore() -> None:
                 f.write(f"{entry}\n")
     else:
         gitignore.write_text(f"{entry}\n", encoding="utf-8")
+
+
+def _warn_low_ticket_counts(jira_data: JiraData) -> None:
+    for label, tickets in [
+        ("Done", jira_data.done),
+        ("In Progress", jira_data.in_progress),
+        ("Planned", jira_data.planned),
+    ]:
+        if len(tickets) < LOW_TICKET_WARNING_THRESHOLD:
+            typer.echo(
+                f"Warning: Only {len(tickets)} ticket(s) found for {label}"
+                " — verify data accuracy before proceeding",
+                err=True,
+            )

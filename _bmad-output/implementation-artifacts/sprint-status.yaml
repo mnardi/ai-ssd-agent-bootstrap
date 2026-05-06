@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-29
-last_updated: 2026-04-29T22:00:00
+last_updated: 2026-05-06
 project: Jira Weekly Report CLI
 project_key: NOKEY
 tracking_system: file-system
@@ -54,7 +54,7 @@ development_status:
   epic-2: in-progress
   2-1-automatic-date-range-calculation-and-jql-construction: review
   2-2-parallel-ticket-retrieval-and-jiradata-assembly: review
-  2-3-low-ticket-count-data-quality-warning: backlog
+  2-3-low-ticket-count-data-quality-warning: review
   epic-2-retrospective: optional
 
   # ── Epic 3: AI Report Generation ────────────────────────────────────────

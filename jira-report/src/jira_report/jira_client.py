@@ -37,6 +37,7 @@ class ReportSections:
 
 
 DEFAULT_TIMEOUT_SECONDS = 10
+LOW_TICKET_WARNING_THRESHOLD = 3
 
 
 def fetch_jira_data(config: Config, week_override: Optional[str] = None) -> JiraData:

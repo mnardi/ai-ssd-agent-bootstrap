@@ -1,6 +1,6 @@
 # Story 2.3: Low-Ticket-Count Data Quality Warning
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -16,38 +16,38 @@ so that I can confirm data accuracy before a thin report gets sent.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `LOW_TICKET_WARNING_THRESHOLD = 3` constant to `jira_client.py` (AC: 1, 3)
-  - [ ] Add immediately after `DEFAULT_TIMEOUT_SECONDS = 10` — same constants block
-  - [ ] No other changes to `jira_client.py`
+- [x] Task 1: Add `LOW_TICKET_WARNING_THRESHOLD = 3` constant to `jira_client.py` (AC: 1, 3)
+  - [x] Add immediately after `DEFAULT_TIMEOUT_SECONDS = 10` — same constants block
+  - [x] No other changes to `jira_client.py`
 
-- [ ] Task 2: Add warning helper and import to `cli.py` (AC: 1, 2, 3)
-  - [ ] Update `jira_client` import line: add `JiraData` and `LOW_TICKET_WARNING_THRESHOLD`
-  - [ ] Add `_warn_low_ticket_counts(jira_data: JiraData) -> None` private function
-  - [ ] Iterate `[("Done", jira_data.done), ("In Progress", jira_data.in_progress), ("Planned", jira_data.planned)]`
-  - [ ] For each section where `len(tickets) < LOW_TICKET_WARNING_THRESHOLD`, call `typer.echo(f"Warning: Only {len(tickets)} ticket(s) found for {label} — verify data accuracy before proceeding", err=True)`
-  - [ ] Call `_warn_low_ticket_counts(jira_data)` in `main()` immediately after `jira_data = fetch_jira_data(...)`
+- [x] Task 2: Add warning helper and import to `cli.py` (AC: 1, 2, 3)
+  - [x] Update `jira_client` import line: add `JiraData` and `LOW_TICKET_WARNING_THRESHOLD`
+  - [x] Add `_warn_low_ticket_counts(jira_data: JiraData) -> None` private function
+  - [x] Iterate `[("Done", jira_data.done), ("In Progress", jira_data.in_progress), ("Planned", jira_data.planned)]`
+  - [x] For each section where `len(tickets) < LOW_TICKET_WARNING_THRESHOLD`, call `typer.echo(f"Warning: Only {len(tickets)} ticket(s) found for {label} — verify data accuracy before proceeding", err=True)`
+  - [x] Call `_warn_low_ticket_counts(jira_data)` in `main()` immediately after `jira_data = fetch_jira_data(...)`
 
-- [ ] Task 3: Add `sample_jira_data` fixture to `tests/conftest.py` (AC: 1–3)
-  - [ ] Import `JiraData`, `JiraTicket` from `jira_report.jira_client`; import `date` from `datetime`
-  - [ ] Create `sample_jira_data` fixture returning `JiraData` with 3 tickets per section (meets threshold — no warning)
-  - [ ] Use a single reusable `JiraTicket(key="TEST-1", summary="Sample ticket", assignee="Alice", status="Done")`
+- [x] Task 3: Add `sample_jira_data` fixture to `tests/conftest.py` (AC: 1–3)
+  - [x] Import `JiraData`, `JiraTicket` from `jira_report.jira_client`; import `date` from `datetime`
+  - [x] Create `sample_jira_data` fixture returning `JiraData` with 3 tickets per section (meets threshold — no warning)
+  - [x] Use a single reusable `JiraTicket(key="TEST-1", summary="Sample ticket", assignee="Alice", status="Done")`
 
-- [ ] Task 4: Update two existing CLI tests to use `sample_jira_data` (AC: regression safety)
-  - [ ] `test_dry_run_flag`: replace `return_value=MagicMock()` for `fetch_jira_data` with `return_value=sample_jira_data`; add `sample_jira_data` fixture parameter
-  - [ ] `test_success_prints_saved_path`: same replacement; add `sample_jira_data` fixture parameter
-  - [ ] Reason: `MagicMock().__len__()` returns 0, which would trigger spurious warnings in those tests
+- [x] Task 4: Update two existing CLI tests to use `sample_jira_data` (AC: regression safety)
+  - [x] `test_dry_run_flag`: replace `return_value=MagicMock()` for `fetch_jira_data` with `return_value=sample_jira_data`; add `sample_jira_data` fixture parameter
+  - [x] `test_success_prints_saved_path`: same replacement; add `sample_jira_data` fixture parameter
+  - [x] Reason: `MagicMock().__len__()` returns 0, which would trigger spurious warnings in those tests
 
-- [ ] Task 5: Add new tests in `tests/test_cli.py` (AC: 1–3)
-  - [ ] Add imports: `from datetime import date`, `from jira_report.jira_client import JiraData, JiraTicket, LOW_TICKET_WARNING_THRESHOLD`
-  - [ ] `test_low_ticket_threshold_constant` — `LOW_TICKET_WARNING_THRESHOLD == 3`
-  - [ ] `test_warning_emitted_for_low_done_count` — 2 Done tickets → "Warning" + "Done" in output
-  - [ ] `test_warning_emitted_for_low_in_progress_count` — 1 In Progress ticket → "Warning" + "In Progress" in output
-  - [ ] `test_warning_emitted_for_low_planned_count` — 0 Planned tickets → "Warning" + "Planned" in output
-  - [ ] `test_no_warning_when_all_sections_meet_threshold` — 3 each → "Warning" NOT in output
-  - [ ] `test_multiple_sections_can_warn` — 2 Done + 1 In Progress + 5 Planned → both "Done" and "In Progress" warnings
-  - [ ] `test_warning_goes_to_stderr_not_stdout` — use `CliRunner(mix_stderr=False)`; assert "Warning" in `result.stderr` and "Warning" not in `result.output`
-  - [ ] `test_pipeline_continues_after_warning` — warning emitted but `generate_report` still called (pipeline not stopped)
-  - [ ] Run `uv run pytest` — all 48 existing tests still pass + new tests green
+- [x] Task 5: Add new tests in `tests/test_cli.py` (AC: 1–3)
+  - [x] Add imports: `from datetime import date`, `from jira_report.jira_client import JiraData, JiraTicket, LOW_TICKET_WARNING_THRESHOLD`
+  - [x] `test_low_ticket_threshold_constant` — `LOW_TICKET_WARNING_THRESHOLD == 3`
+  - [x] `test_warning_emitted_for_low_done_count` — 2 Done tickets → "Warning" + "Done" in output
+  - [x] `test_warning_emitted_for_low_in_progress_count` — 1 In Progress ticket → "Warning" + "In Progress" in output
+  - [x] `test_warning_emitted_for_low_planned_count` — 0 Planned tickets → "Warning" + "Planned" in output
+  - [x] `test_no_warning_when_all_sections_meet_threshold` — 3 each → "Warning" NOT in output
+  - [x] `test_multiple_sections_can_warn` — 2 Done + 1 In Progress + 5 Planned → both "Done" and "In Progress" warnings
+  - [x] `test_warning_goes_to_stderr_not_stdout` — assert "Warning" in `result.stderr` and "Warning" not in `result.stdout` (note: click 8.3 dropped `mix_stderr` kwarg; default `CliRunner` already separates `stderr`/`stdout`)
+  - [x] `test_pipeline_continues_after_warning` — warning emitted but `generate_report` still called (pipeline not stopped)
+  - [x] Run `uv run pytest` — all 48 existing tests still pass + new tests green (56 total passed)
 
 ## Dev Notes
 
@@ -308,10 +308,31 @@ Files to modify:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-7 (1M context)
 
 ### Debug Log References
 
+- `uv run pytest` — 56 passed (was 48 before this story; +8 new warning tests)
+- One transient test failure (`test_warning_goes_to_stderr_not_stdout`) caused by click 8.3 removing the `mix_stderr` kwarg on `CliRunner`. Fix: removed the kwarg and asserted against `result.stderr` / `result.stdout` (which click 8.3 already exposes separately by default). All other warning tests use `result.output` (which still contains merged stdout+stderr in click 8.3).
+
 ### Completion Notes List
 
+- Added `LOW_TICKET_WARNING_THRESHOLD = 3` to `jira_client.py` constants block (single source of truth per architecture spec).
+- `cli.py`: imported `JiraData` and `LOW_TICKET_WARNING_THRESHOLD`; added private `_warn_low_ticket_counts(jira_data)` helper that emits per-section warnings to stderr via `typer.echo(..., err=True)`; wired the call into `main()` immediately after `fetch_jira_data()` returns. Pipeline proceeds normally after warnings (no exception raised).
+- `conftest.py`: added shared `sample_jira_data` fixture (3 tickets per section, exactly at threshold — no spurious warnings).
+- Updated two existing CLI tests (`test_dry_run_flag`, `test_success_prints_saved_path`) to use `sample_jira_data` instead of `MagicMock()` (avoids `MagicMock().__len__()` returning 0 and producing noisy warning output).
+- Added 8 new tests covering: threshold constant value, per-section warning emission (Done / In Progress / Planned), no-warning happy path, multi-section warnings, stderr-not-stdout routing, pipeline continuation after warning.
+- Final result: all 56 tests pass; no regressions.
+
 ### File List
+
+- `jira-report/src/jira_report/jira_client.py` (modified) — added `LOW_TICKET_WARNING_THRESHOLD = 3` constant
+- `jira-report/src/jira_report/cli.py` (modified) — extended import, added `_warn_low_ticket_counts`, called from `main()`
+- `jira-report/tests/conftest.py` (modified) — added imports + `sample_jira_data` fixture
+- `jira-report/tests/test_cli.py` (modified) — added imports + `_make_jira_data` helper + 8 new warning tests; updated 2 existing tests to use `sample_jira_data`
+
+## Change Log
+
+| Date       | Description                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------ |
+| 2026-05-06 | Implemented Story 2.3: low-ticket-count data quality warning (FR11). Status: ready-for-dev → review.          |
