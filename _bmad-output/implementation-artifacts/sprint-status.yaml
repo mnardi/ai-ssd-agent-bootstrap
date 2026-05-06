@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-04-29
-last_updated: 2026-05-06T00:00:01
+last_updated: 2026-05-06T00:00:03
 project: Jira Weekly Report CLI
 project_key: NOKEY
 tracking_system: file-system
@@ -60,7 +60,7 @@ development_status:
   # ── Epic 3: AI Report Generation ────────────────────────────────────────
   epic-3: in-progress
   3-1-ai-prompt-construction: review
-  3-2-claude-api-call-and-reportsections-assembly: backlog
+  3-2-claude-api-call-and-reportsections-assembly: review
   epic-3-retrospective: optional
 
   # ── Epic 4: Report Output & Delivery ────────────────────────────────────

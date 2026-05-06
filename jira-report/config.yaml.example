@@ -1,5 +1,6 @@
 jira_url: https://yourcompany.atlassian.net
-api_token: your-api-token-here
+api_token: your-jira-api-token-here
+api_key: your-anthropic-api-key-here
 project_key: PROJ
 output_dir: ./reports
 ai_provider: anthropic

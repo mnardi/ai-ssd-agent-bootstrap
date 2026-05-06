@@ -10,6 +10,7 @@ def sample_config():
     return Config(
         jira_url="https://example.atlassian.net",
         api_token="test-token-not-real",
+        api_key="test-anthropic-key-not-real",
         project_key="TEST",
         output_dir="./reports",
         ai_provider="anthropic",

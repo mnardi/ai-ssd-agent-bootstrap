@@ -14,6 +14,7 @@ from jira_report.config import (
 VALID_CONFIG = {
     "jira_url": "https://example.atlassian.net",
     "api_token": "test-token",
+    "api_key": "test-anthropic-key",
     "project_key": "TEST",
     "output_dir": "./reports",
     "ai_provider": "anthropic",
@@ -35,6 +36,7 @@ def test_load_config_valid(tmp_path):
     assert isinstance(config, Config)
     assert config.jira_url == "https://example.atlassian.net"
     assert config.api_token == "test-token"
+    assert config.api_key == "test-anthropic-key"
     assert config.project_key == "TEST"
     assert config.output_dir == "./reports"
     assert config.ai_provider == "anthropic"
@@ -61,6 +63,13 @@ def test_load_config_missing_jira_url(tmp_path):
     data = {k: v for k, v in VALID_CONFIG.items() if k != "jira_url"}
     p = _write_config(tmp_path, data)
     with pytest.raises(ConfigError, match="jira_url"):
+        load_config(p)
+
+
+def test_load_config_missing_api_key(tmp_path):
+    data = {k: v for k, v in VALID_CONFIG.items() if k != "api_key"}
+    p = _write_config(tmp_path, data)
+    with pytest.raises(ConfigError, match="api_key"):
         load_config(p)
 
 
@@ -98,3 +107,4 @@ def test_no_credentials_in_error(tmp_path):
     with pytest.raises(ConfigError) as exc_info:
         load_config(p)
     assert VALID_CONFIG["api_token"] not in str(exc_info.value)
+    assert VALID_CONFIG["api_key"] not in str(exc_info.value)

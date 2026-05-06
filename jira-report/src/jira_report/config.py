@@ -25,7 +25,8 @@ class OutputError(JiraReportError): ...
 
 class Config(BaseModel):
     jira_url: str
-    api_token: str  # CREDENTIAL — never log or format into strings
+    api_token: str  # CREDENTIAL — Jira; never log or format into strings
+    api_key: str  # CREDENTIAL — Anthropic; never log or format into strings
     project_key: str
     output_dir: str  # stored as str; renderer.py converts to Path
     ai_provider: str
