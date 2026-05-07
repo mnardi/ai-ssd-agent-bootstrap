@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 from jira_report.config import Config
-from jira_report.jira_client import JiraData, JiraTicket
+from jira_report.jira_client import JiraData, JiraTicket, ReportSections
 
 
 @pytest.fixture
@@ -29,4 +29,14 @@ def sample_jira_data():
         planned=[ticket, ticket, ticket],
         week_start=date(2026, 4, 21),
         week_end=date(2026, 4, 27),
+    )
+
+
+@pytest.fixture
+def sample_sections():
+    return ReportSections(
+        done_text="Done body.",
+        in_progress_text="IP body.",
+        next_plan_text="NP body.",
+        executive_summary="ES body.",
     )

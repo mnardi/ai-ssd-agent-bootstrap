@@ -105,7 +105,7 @@ def test_dry_run_flag(tmp_path, monkeypatch, sample_config, sample_jira_data):
     monkeypatch.chdir(tmp_path)
     captured = {}
 
-    def fake_render(config, sections, dry_run=False):
+    def fake_render(config, sections, week_end, dry_run=False):
         captured["dry_run"] = dry_run
         return None
 

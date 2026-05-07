@@ -40,7 +40,7 @@ def main(
         sections = generate_report(config, jira_data)
 
         typer.echo("Writing output...")
-        result_path = render_and_write(config, sections, dry_run=dry_run)
+        result_path = render_and_write(config, sections, jira_data.week_end, dry_run=dry_run)
 
         if dry_run:
             typer.echo("Dry run — no file written")
