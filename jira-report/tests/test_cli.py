@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
 from jira_report.cli import app, _ensure_gitignore
-from jira_report.config import ConfigError
+from jira_report.config import ConfigError, JiraFetchError, AIGenerationError, OutputError
 from jira_report.jira_client import JiraData, JiraTicket, LOW_TICKET_WARNING_THRESHOLD
 
 runner = CliRunner()
@@ -257,3 +257,114 @@ def test_pipeline_continues_after_warning(tmp_path, monkeypatch, sample_config):
 
     assert generate_called.get("called") is True
     assert result.exit_code == 0
+
+
+# ── Story 4.3: Terminal Run Summary ───────────────────────────────────────────
+
+def test_summary_includes_ticket_counts(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Done: 3 tickets" in result.output
+    assert "In Progress: 3 tickets" in result.output
+    assert "Planned: 3 tickets" in result.output
+
+
+def test_summary_includes_pipe_separators(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Done: 3 tickets | In Progress: 3 tickets | Planned: 3 tickets" in result.output
+
+
+def test_summary_appears_on_dry_run(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=None):
+        result = runner.invoke(app, ["--dry-run"])
+    assert "Done: 3 tickets | In Progress: 3 tickets | Planned: 3 tickets" in result.output
+    assert "Dry run — no file written" in result.output
+
+
+def test_summary_followed_by_report_saved_line(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    counts_pos = result.output.index("Done: 3 tickets")
+    saved_pos = result.output.index("Done. Report saved:")
+    assert counts_pos < saved_pos
+
+
+def test_no_summary_on_jira_fetch_error(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", side_effect=JiraFetchError("boom")):
+        result = runner.invoke(app, [])
+    assert result.exit_code == 1
+    assert "tickets |" not in result.output
+
+
+def test_no_summary_on_ai_generation_error(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", side_effect=AIGenerationError("ai boom")):
+        result = runner.invoke(app, [])
+    assert result.exit_code == 1
+    assert "tickets |" not in result.output
+
+
+def test_no_summary_on_output_error(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", side_effect=OutputError("disk full")):
+        result = runner.invoke(app, [])
+    assert result.exit_code == 1
+    assert "tickets |" not in result.output
+
+
+def test_status_message_order_nfr3(tmp_path, monkeypatch, sample_config, sample_jira_data):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=sample_jira_data), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    out = result.output
+    assert out.index("Authenticating...") < out.index("Fetching Jira data...")
+    assert out.index("Fetching Jira data...") < out.index("Generating report...")
+    assert out.index("Generating report...") < out.index("Writing output...")
+    assert out.index("Writing output...") < out.index("Done: 3 tickets")
+    assert out.index("Done: 3 tickets") < out.index("Done. Report saved:")
+
+
+def test_summary_with_varied_counts(tmp_path, monkeypatch, sample_config):
+    monkeypatch.chdir(tmp_path)
+    with patch("jira_report.cli._ensure_gitignore"), \
+         patch("jira_report.cli.load_config", return_value=sample_config), \
+         patch("jira_report.cli.fetch_jira_data", return_value=_make_jira_data(done_count=7, in_progress_count=4, planned_count=5)), \
+         patch("jira_report.cli.generate_report", return_value=MagicMock()), \
+         patch("jira_report.cli.render_and_write", return_value=Path("./r.html")):
+        result = runner.invoke(app, [])
+    assert "Done: 7 tickets | In Progress: 4 tickets | Planned: 5 tickets" in result.output
