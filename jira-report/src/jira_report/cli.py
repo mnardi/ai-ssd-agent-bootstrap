@@ -42,6 +42,8 @@ def main(
         typer.echo("Writing output...")
         result_path = render_and_write(config, sections, jira_data.week_end, dry_run=dry_run)
 
+        typer.echo(_format_summary(jira_data))
+
         if dry_run:
             typer.echo("Dry run — no file written")
         else:
@@ -72,6 +74,14 @@ def _ensure_gitignore() -> None:
                 f.write(f"{entry}\n")
     else:
         gitignore.write_text(f"{entry}\n", encoding="utf-8")
+
+
+def _format_summary(jira_data: JiraData) -> str:
+    return (
+        f"Done: {len(jira_data.done)} tickets | "
+        f"In Progress: {len(jira_data.in_progress)} tickets | "
+        f"Planned: {len(jira_data.planned)} tickets"
+    )
 
 
 def _warn_low_ticket_counts(jira_data: JiraData) -> None:
